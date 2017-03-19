@@ -1,0 +1,9 @@
+[submodule "third_party/DownloadProject"]
+	path = third_party/DownloadProject
+	url = https://github.com/Crascit/DownloadProject.git
+[submodule "third_party/gsl_lite"]
+	path = third_party/gsl_lite
+	url = https://github.com/martinmoene/gsl-lite
+[submodule "third_party/variant"]
+	path = third_party/variant
+	url = https://github.com/mapbox/variant
