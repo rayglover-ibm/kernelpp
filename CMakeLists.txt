@@ -14,7 +14,16 @@ project (${tgt}
 set (src      "src/lib.cpp")
 set (src_cuda "src/lib.cu")
 
-configure_file ("include/kernelpp/config.h.in"
+# language requirements/compiler opts
+if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+    add_definitions ("-std=c++14 -Wall")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    add_definitions ("--std=c++14 -W -Wall")
+endif ()
+
+# configurable header
+configure_file (
+    "include/kernelpp/config.h.in"
     "include/kernelpp/config.h"
 )
 
