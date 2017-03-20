@@ -15,11 +15,8 @@ set (src      "src/lib.cpp")
 set (src_cuda "src/lib.cu")
 
 # language requirements/compiler opts
-if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-    add_definitions ("-std=c++14 -Wall")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    add_definitions ("--std=c++14 -W -Wall")
-endif ()
+set (CMAKE_CXX_STANDARD 14)
+set (CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # configurable header
 configure_file (
