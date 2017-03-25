@@ -23,13 +23,11 @@ configure_file (
     "include/kernelpp/config.h.in"
     "include/kernelpp/config.h"
 )
-
-include_directories (
-    "third_party/gsl_lite/include"
-    "third_party/variant/include"
-
+list (APPEND inc
+    "${CMAKE_CURRENT_SOURCE_DIR}/third_party/gsl_lite/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/third_party/variant/include"
     "${CMAKE_CURRENT_BINARY_DIR}/include"
-    "include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
 if (kernelpp_WITH_CUDA)
@@ -38,8 +36,9 @@ if (kernelpp_WITH_CUDA)
     find_package (CUDA REQUIRED)
 
     link_libraries (${CUDA_LIBRARIES})
+    cuda_include_directories (${inc})
     cuda_wrap_srcs (${tgt} OBJ
-        objs ${src_cuda}
+        obj_cuda ${src_cuda}
 
         OPTIONS -cudart static
                 --default-stream per-thread
@@ -47,10 +46,15 @@ if (kernelpp_WITH_CUDA)
     )
 endif ()
 
+# main library
 add_library (${tgt} STATIC
-    ${objs} ${src}
+    ${src} ${obj_cuda}
+)
+target_include_directories (${tgt} PUBLIC
+    ${inc}
 )
 
+# tests
 if (kernelpp_WITH_TESTS)
     enable_testing ()
     add_subdirectory (test)
