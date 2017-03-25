@@ -24,28 +24,31 @@ configure_file (
     "include/kernelpp/config.h"
 )
 
+include_directories (
+    "third_party/gsl_lite/include"
+    "third_party/variant/include"
+
+    "${CMAKE_CURRENT_BINARY_DIR}/include"
+    "include"
+)
+
 if (kernelpp_WITH_CUDA)
+    # TODO(rayg): revise once CMake 3.8 is released
     set (CUDA_VERBOSE_BUILD ON)
     find_package (CUDA REQUIRED)
-    link_libraries (${CUDA_LIBRARIES})
 
-    CUDA_WRAP_SRCS (${tgt} OBJ
+    link_libraries (${CUDA_LIBRARIES})
+    cuda_wrap_srcs (${tgt} OBJ
         objs ${src_cuda}
 
         OPTIONS -cudart static
                 --default-stream per-thread
+                -std=c++11
     )
 endif ()
 
 add_library (${tgt} STATIC
     ${objs} ${src}
-)
-target_include_directories (${tgt}
-    PUBLIC "third_party/gsl_lite/include"
-    PUBLIC "third_party/variant/include"
-
-    PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/include"
-    PUBLIC "include"
 )
 
 if (kernelpp_WITH_TESTS)
