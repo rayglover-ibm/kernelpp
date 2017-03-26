@@ -30,10 +30,18 @@ list (APPEND inc
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
+# main library
+add_library (${tgt} STATIC ${src})
+target_include_directories (${tgt} PUBLIC ${inc})
+
 if (kernelpp_WITH_CUDA)
     # TODO(rayg): revise once CMake 3.8 is released
     set (CUDA_VERBOSE_BUILD ON)
     find_package (CUDA REQUIRED)
+
+    if (UNIX AND CMAKE_POSITION_INDEPENDENT_CODE)
+        list (APPEND CMAKE_CXX_FLAGS "-fPIC")
+    endif ()
 
     link_libraries (${CUDA_LIBRARIES})
     cuda_include_directories (${inc})
@@ -44,15 +52,8 @@ if (kernelpp_WITH_CUDA)
                 --default-stream per-thread
                 -std=c++11
     )
+    target_sources (${tgt} PRIVATE ${obj_cuda})
 endif ()
-
-# main library
-add_library (${tgt} STATIC
-    ${src} ${obj_cuda}
-)
-target_include_directories (${tgt} PUBLIC
-    ${inc}
-)
 
 # tests
 if (kernelpp_WITH_TESTS)
