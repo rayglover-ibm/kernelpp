@@ -67,13 +67,28 @@ namespace kernelpp
             static constexpr bool is_void = false;
             static error_code get_errc(const output_type& s) { return s; }
         };
+
+        template <typename K, typename... Args>
+        struct op_trait_helper
+        {
+            using type =
+                typename detail::op_traits<
+                    decltype(K::template op<compute_mode::AUTO>(std::declval<Args>()...))
+                    >;
+        };
+
+        template <typename K>
+        struct op_trait_helper<K>
+        {
+            using type =
+                typename detail::op_traits<
+                    decltype(K::template op<compute_mode::AUTO>())
+                    >;
+        };
     }
 
     template <typename K, typename... Args>
-    using op_traits =
-        typename detail::op_traits<
-            decltype(K::template op<compute_mode::AUTO>(std::declval<Args>()...))
-            >;
+    using op_traits = typename detail::op_trait_helper<K, Args...>::type;
 
     template <typename K, typename... Args>
     using result = typename op_traits<K, Args...>::output_type;
