@@ -58,5 +58,5 @@ namespace kernelpp
 }
 
 #if defined(kernelpp_WITH_CUDA) && defined(__CUDACC__)
-#   include "device_util-inl.cuh"
+#   include "cuda_util-inl.cuh"
 #endif

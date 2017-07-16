@@ -24,6 +24,25 @@ using namespace kernelpp;
 
 namespace
 {
+    template <compute_mode M>
+    void print_compute_info()
+    {
+        using traits = compute_traits<M>;
+        std::cout << to_str(M) << " enabled: " << traits::enabled << ", available: " <<
+            (traits::enabled ? traits::available() : 0) << std::endl;
+    }
+}
+
+TEST(kernel, compute_mode_info)
+{
+    print_compute_info<compute_mode::CPU>();
+    print_compute_info<compute_mode::AVX>();
+    print_compute_info<compute_mode::CUDA>();
+}
+
+
+namespace
+{
     KERNEL_DECL(foo, compute_mode::CPU)
     {
         template<compute_mode> static void op();
@@ -91,16 +110,51 @@ namespace
 
 TEST(kernel, call_cuda)
 {
-    using traits = compute_traits<compute_mode::CUDA>;
+    using cuda = compute_traits<compute_mode::CUDA>;
+
+    cuda_calls = 0;
+    cpu_calls = 0;
 
     EXPECT_FALSE(run<foo_2>());
 
-    if (traits::enabled && traits::available()) {
+    if (cuda::enabled && cuda::available()) {
         EXPECT_EQ(0, cpu_calls);
         EXPECT_EQ(1, cuda_calls);
     }
     else {
         EXPECT_EQ(1, cpu_calls);
         EXPECT_EQ(0, cuda_calls);
+    }
+}
+
+
+namespace
+{
+    KERNEL_DECL(foo_3, compute_mode::CPU, compute_mode::AVX) {
+        template<compute_mode> static void op();
+    };
+
+    int avx_calls = 0;
+
+    template <> void foo_3::op<compute_mode::CPU>() { cpu_calls++; }
+    template <> void foo_3::op<compute_mode::AVX>() { avx_calls++; }
+}
+
+TEST(kernel, call_avx)
+{
+    using avx = compute_traits<compute_mode::AVX>;
+
+    cuda_calls = 0;
+    cpu_calls = 0;
+
+    EXPECT_FALSE(run<foo_3>());
+
+    if (avx::enabled && avx::available()) {
+        EXPECT_EQ(0, cpu_calls);
+        EXPECT_EQ(1, avx_calls);
+    }
+    else {
+        EXPECT_EQ(1, cpu_calls);
+        EXPECT_EQ(0, avx_calls);
     }
 }

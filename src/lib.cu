@@ -12,7 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.  */
 
-#include "kernelpp/device_util.h"
+#include "kernelpp/cuda_util.h"
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -23,7 +23,6 @@ namespace kernelpp
     bool init_cudart(void)
     {
         static bool success{ false };
-
         static std::once_flag flag;
 
         std::call_once(flag, [&]() {

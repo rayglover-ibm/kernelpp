@@ -15,7 +15,8 @@ limitations under the License.  */
 #pragma once
 
 #include "kernelpp/config.h"
-#include "kernelpp/device_util.h"
+#include "kernelpp/cuda_util.h"
+#include "kernelpp/avx_util.h"
 
 #include <memory>
 #include <type_traits>
@@ -23,7 +24,7 @@ limitations under the License.  */
 namespace kernelpp
 {
     /* the suppported compute modes */
-    enum class compute_mode { AUTO = 1, CUDA, CPU };
+    enum class compute_mode { AUTO = 1, CUDA, AVX, CPU };
 
     enum class error_code : uint8_t
     {
@@ -49,19 +50,30 @@ namespace kernelpp
     inline const char* to_str(const error_code s);
     inline const char* to_str(const compute_mode m);
 
+
+    /*  compute_traits ----------------------------------------------------- */
+
     template <compute_mode>
     struct compute_traits {
+        static constexpr bool enabled = false;
+        static bool available() { return false; }
+    };
+
+    template <>
+    struct compute_traits<compute_mode::CPU> {
         static constexpr bool enabled = true;
         static bool available() { return true; }
     };
 
-#if !defined(kernelpp_WITH_CUDA)
+#if defined(kernelpp_WITH_AVX)
     template <>
-    struct compute_traits<compute_mode::CUDA> {
-        static constexpr bool enabled = false;
-        static bool available() { return false; }
+    struct compute_traits<compute_mode::AVX> {
+        static constexpr bool enabled = true;
+        static bool available() { return kernelpp::init_avx(); }
     };
-#else
+#endif
+
+#if defined(kernelpp_WITH_CUDA)
     template <>
     struct compute_traits<compute_mode::CUDA> {
         static constexpr bool enabled = true;
@@ -103,7 +115,6 @@ namespace kernelpp
 
     /*  Implementation detail ---------------------------------------------- */
 
-
     inline const char* to_str(const error_code s) {
         switch (s) {
         case error_code::KERNEL_FAILED: return "Kernel Failed";
@@ -119,6 +130,7 @@ namespace kernelpp
         switch (m) {
         case compute_mode::CPU: return "CPU";
         case compute_mode::CUDA: return "Cuda";
+        case compute_mode::AVX: return "AVX";
         case compute_mode::AUTO: return "Auto";
         }
         return "Unknown";

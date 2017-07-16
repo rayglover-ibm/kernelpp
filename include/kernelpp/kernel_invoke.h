@@ -143,8 +143,15 @@ namespace kernelpp
             s = control<compute_mode::CUDA>::call<Runner, Kernel, Args...>(
                     r, std::forward<Args>(args)...);
         }
+        /* Attempt to run avx kernel */
+        if (s != error_code::NONE &&
+            compute_traits<compute_mode::AVX>::available())
+        {
+            s = control<compute_mode::AVX>::call<Runner, Kernel, Args...>(
+                    r, std::forward<Args>(args)...);
+        }
         /* Attempt/fallback to run cpu kernel */
-        if (s == error_code::KERNEL_NOT_DEFINED &&
+        if (s != error_code::NONE &&
             compute_traits<compute_mode::CPU>::available())
         {
             s = control<compute_mode::CPU>::call<Runner, Kernel, Args...>(

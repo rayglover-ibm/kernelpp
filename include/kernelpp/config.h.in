@@ -6,3 +6,4 @@
 #pragma once
 
 #cmakedefine kernelpp_WITH_CUDA
+#cmakedefine kernelpp_WITH_AVX

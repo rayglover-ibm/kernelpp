@@ -1,8 +1,11 @@
 cmake_minimum_required (VERSION 3.0)
 cmake_policy (SET CMP0048 NEW) # project versioning
 
+# options ---------------------------------------------------------------------
 option (kernelpp_WITH_CUDA  "Enable cuda support" OFF)
+option (kernelpp_WITH_AVX   "Enable avx support"  ON)
 option (kernelpp_WITH_TESTS "Enable unit tests"   ON)
+# -----------------------------------------------------------------------------
 
 set (tgt "kernelpp")
 
