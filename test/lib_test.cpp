@@ -28,8 +28,8 @@ namespace
     void print_compute_info()
     {
         using traits = compute_traits<M>;
-        std::cout << to_str(M) << " enabled: " << traits::enabled << ", available: " <<
-            (traits::enabled ? traits::available() : 0) << std::endl;
+        std::cout << to_str(M) << " enabled: " << traits::enabled << ", available: "
+            << (traits::enabled ? traits::available() : 0) << std::endl;
     }
 }
 
@@ -157,4 +157,11 @@ TEST(kernel, call_avx)
         EXPECT_EQ(1, cpu_calls);
         EXPECT_EQ(0, avx_calls);
     }
+}
+
+
+TEST(runners, log_runner)
+{
+    log_runner<foo> r(&std::cout);
+    EXPECT_FALSE(run_with<foo>(r));
 }
