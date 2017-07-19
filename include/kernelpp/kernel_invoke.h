@@ -103,16 +103,14 @@ namespace kernelpp
     template <compute_mode M>
     struct control<M, std::enable_if_t< compute_traits<M>::enabled >>
     {
-        template <typename Runner, typename K, typename... Args>
+        template <typename K, typename Runner, typename... Args>
         static auto call(Runner& r, Args&&... args)
             -> result<K, Args...>
         {
             if (!r.begin(M)) { return error_code::CANCELLED; }
-
-            result<K, Args...> s = r.template apply<M, Args...>(
-                std::forward<Args>(args)...);
-
+            result<K, Args...> s = r.template apply<M>(std::forward<Args>(args)...);
             r.end(op_traits<K, Args...>::get_errc(s));
+
             return s;
         }
     };
@@ -121,7 +119,7 @@ namespace kernelpp
     template <compute_mode M>
     struct control<M, std::enable_if_t< !compute_traits<M>::enabled >>
     {
-        template <typename Runner, typename Kernel, typename... Args>
+        template <typename Kernel, typename Runner, typename... Args>
         static auto call(Runner&, Args&&...)
             -> result<Kernel, Args...>
         {
@@ -131,7 +129,7 @@ namespace kernelpp
 
     /*  Specialization for AUTO: determines compute_mode at runtime  */
     template <>
-    template <typename Runner, typename Kernel, typename... Args>
+    template <typename Kernel, typename Runner, typename... Args>
     auto control<compute_mode::AUTO>::call(Runner& r, Args&&... args)
         -> result<Kernel, Args...>
     {
@@ -140,21 +138,21 @@ namespace kernelpp
         /* Attempt to run cuda kernel */
         if (compute_traits<compute_mode::CUDA>::available())
         {
-            s = control<compute_mode::CUDA>::call<Runner, Kernel, Args...>(
+            s = control<compute_mode::CUDA>::call<Kernel>(
                     r, std::forward<Args>(args)...);
         }
         /* Attempt to run avx kernel */
-        if (s != error_code::NONE &&
+        if (s != error_code::KERNEL_NOT_DEFINED &&
             compute_traits<compute_mode::AVX>::available())
         {
-            s = control<compute_mode::AVX>::call<Runner, Kernel, Args...>(
+            s = control<compute_mode::AVX>::call<Kernel>(
                     r, std::forward<Args>(args)...);
         }
         /* Attempt/fallback to run cpu kernel */
-        if (s != error_code::NONE &&
+        if (s != error_code::KERNEL_NOT_DEFINED &&
             compute_traits<compute_mode::CPU>::available())
         {
-            s = control<compute_mode::CPU>::call<Runner, Kernel, Args...>(
+            s = control<compute_mode::CPU>::call<Kernel>(
                     r, std::forward<Args>(args)...);
         }
         return s;
@@ -170,6 +168,7 @@ namespace kernelpp
         bool begin(compute_mode) { return true; }
         void end(error_code) {}
 
+        /* when the kernel doesnt support the given compute_mode */
         template <
             compute_mode M, typename... Args,
             std::enable_if_t< !K::template supports<M>::value, int> = 0
@@ -178,6 +177,7 @@ namespace kernelpp
             return error_code::KERNEL_NOT_DEFINED;
         }
 
+        /* when the kernel's return type is non-void */
         template <
             compute_mode M, typename... Args,
             std::enable_if_t<
@@ -189,6 +189,7 @@ namespace kernelpp
             return K::template op<M>(std::forward<Args>(args)...);
         }
 
+        /* when the kernel's return type is void */
         template <
             compute_mode M, typename... Args,
             std::enable_if_t<
@@ -254,7 +255,7 @@ namespace kernelpp
         Runner& r, Args&&... args)
     {
         return detail::convert(
-            control<M>::template call<Runner, K>(r, std::forward<Args>(args)...)
+            control<M>::template call<K>(r, std::forward<Args>(args)...)
             );
     }
 
@@ -269,7 +270,7 @@ namespace kernelpp
         runner<K> r;
 
         return detail::convert(
-            control<M>::template call<runner<K>, K>(r, std::forward<Args>(args)...)
+            control<M>::template call<K>(r, std::forward<Args>(args)...)
             );
     }
 }
