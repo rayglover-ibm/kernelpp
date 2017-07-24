@@ -165,3 +165,29 @@ TEST(runners, log_runner)
     log_runner<foo> r(&std::cout);
     EXPECT_FALSE(run_with<foo>(r));
 }
+
+namespace
+{
+    struct foo_struct
+    {
+        int calls = 0;
+        void call() { run<kern_a>(this); }
+
+      private:
+        KERNEL_DECL(kern_a, compute_mode::CPU) {
+            template<compute_mode> static void op(foo_struct*);
+        };
+    };
+
+    template <> void foo_struct::kern_a::op<compute_mode::CPU>(foo_struct* state) {
+        state->calls++;
+    }
+}
+
+TEST(struct_example, call)
+{
+    foo_struct f;
+    f.call();
+
+    EXPECT_EQ(1, f.calls);
+}

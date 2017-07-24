@@ -204,28 +204,7 @@ namespace kernelpp
         }
     };
 
-    template <typename K>
-    struct log_runner : public runner<K>
-    {
-        using typename runner<K>::traits;
-        log_runner(std::ostream* out) : m_out(out) {}
 
-        bool begin(compute_mode m)
-        {
-            *m_out << "[" << traits::name << "] mode="
-                   << to_str(m) << std::endl;
-
-            return true;
-        }
-
-        void end(error_code s)
-        {
-            *m_out << "[" << traits::name << "] status="
-                   << to_str(s) << std::endl;
-        }
-
-        private: std::ostream* m_out;
-    };
 
     /*  public api --------------------------------------------------------- */
 
@@ -273,4 +252,30 @@ namespace kernelpp
             control<M>::template call<K>(r, std::forward<Args>(args)...)
             );
     }
+
+
+    /* Extensions ---------------------------------------------------------- */
+
+    template <typename K>
+    struct log_runner : public runner<K>
+    {
+        using typename runner<K>::traits;
+        log_runner(std::ostream* out) : m_out(out) {}
+
+        bool begin(compute_mode m)
+        {
+            *m_out << "[" << traits::name << "] mode="
+                   << to_str(m) << std::endl;
+
+            return true;
+        }
+
+        void end(error_code s)
+        {
+            *m_out << "[" << traits::name << "] status="
+                   << to_str(s) << std::endl;
+        }
+
+        private: std::ostream* m_out;
+    };
 }

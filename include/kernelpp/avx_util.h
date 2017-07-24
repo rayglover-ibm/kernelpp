@@ -17,7 +17,7 @@ limitations under the License.  */
 namespace kernelpp
 {
     /*  Check avx is available and perform any required
-     *  initialized.
+     *  initialization.
      */
     bool init_avx();
 }
