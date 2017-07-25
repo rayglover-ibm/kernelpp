@@ -1,9 +1,19 @@
 cmake_minimum_required (VERSION 3.2)
 
 include (CTest)
-include ("${PROJECT_SOURCE_DIR}/third_party/DownloadProject/DownloadProject.cmake")
+
+# retrieve DownloadProject
+set (src "https://raw.githubusercontent.com/Crascit/DownloadProject/master")
+set (dest "${CMAKE_CURRENT_BINARY_DIR}/tmp.DownloadProject")
+
+foreach (file
+	"DownloadProject.cmake"
+	"DownloadProject.CMakeLists.cmake.in")
+	file (DOWNLOAD "${src}/${file}" "${dest}/${file}" STATUS "retrieving ${file}")
+endforeach ()
 
 # download GoogleTest targets
+include ("${dest}/DownloadProject.cmake")
 download_project (
 	PROJ            googletest
 	GIT_REPOSITORY  https://github.com/google/googletest.git
@@ -25,6 +35,7 @@ add_executable (kernelpp_test
 target_link_libraries (kernelpp_test
 	kernelpp gtest gmock_main
 )
+target_compile_options (kernelpp_test PUBLIC -g)
 
 add_test (
 	NAME kernelpp_test_suite
