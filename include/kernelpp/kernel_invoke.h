@@ -158,6 +158,7 @@ namespace kernelpp
         return s;
     }
 
+
     /*  kernel runner ------------------------------------------------------ */
 
     template <typename K>
@@ -203,7 +204,6 @@ namespace kernelpp
             return error_code::NONE;
         }
     };
-
 
 
     /*  public api --------------------------------------------------------- */

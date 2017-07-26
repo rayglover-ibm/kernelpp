@@ -175,13 +175,11 @@ namespace
 
       private:
         KERNEL_DECL(kern_a, compute_mode::CPU) {
-            template<compute_mode> static void op(foo_struct*);
+            template<compute_mode> static void op(foo_struct* state) {
+                state->calls++;
+            }
         };
     };
-
-    template <> void foo_struct::kern_a::op<compute_mode::CPU>(foo_struct* state) {
-        state->calls++;
-    }
 }
 
 TEST(struct_example, call)
