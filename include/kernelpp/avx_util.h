@@ -14,10 +14,30 @@ limitations under the License.  */
 
 #pragma once
 
+#include <cstdint>
+#include <cstddef>
+#include <type_traits>
+
 namespace kernelpp
 {
     /*  Check avx is available and perform any required
      *  initialization.
      */
     bool init_avx();
+
+    /*  True if the given pointer is nullptr or aligned
+     *  to std::alignment_of(T) * N, false otherwise.
+     */
+    template <typename T, size_t N>
+    bool is_aligned(const T* ptr);
+
+
+    /* implementation ------------------------------------------------------ */
+
+    template <typename T, size_t N>
+    bool is_aligned(const T* ptr)
+    {
+        if (ptr == nullptr) return true;
+        return ((uintptr_t)ptr & (uintptr_t)(std::alignment_of<T>::value * N - 1)) == 0;
+    }
 }

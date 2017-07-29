@@ -16,6 +16,7 @@ limitations under the License.  */
 
 #include "kernelpp/kernel.h"
 #include "kernelpp/kernel_invoke.h"
+#include "kernelpp/avx_util.h"
 
 #include <array>
 #include <vector>
@@ -40,6 +41,7 @@ TEST(kernel, compute_mode_info)
     print_compute_info<compute_mode::CUDA>();
 }
 
+/* ------------------------------------------------------------------------- */
 
 namespace
 {
@@ -94,6 +96,7 @@ TEST(kernel, call_vector)
     EXPECT_EQ(result.get<int>(), 5);
 }
 
+/* cuda -------------------------------------------------------------------- */
 
 namespace
 {
@@ -127,11 +130,13 @@ TEST(kernel, call_cuda)
     }
 }
 
+/* avx --------------------------------------------------------------------- */
 
 namespace
 {
     KERNEL_DECL(foo_3, compute_mode::CPU, compute_mode::AVX) {
         template<compute_mode> static void op();
+        template<compute_mode> static error_code op(std::vector<float>&);
     };
 
     int avx_calls = 0;
@@ -144,7 +149,7 @@ TEST(kernel, call_avx)
 {
     using avx = compute_traits<compute_mode::AVX>;
 
-    cuda_calls = 0;
+    avx_calls = 0;
     cpu_calls = 0;
 
     EXPECT_FALSE(run<foo_3>());
@@ -159,12 +164,30 @@ TEST(kernel, call_avx)
     }
 }
 
+TEST(avx_util, is_aligned)
+{
+    using T = int32_t;
+
+    EXPECT_TRUE((kernelpp::is_aligned<T, 1>(nullptr)));
+    EXPECT_TRUE((kernelpp::is_aligned<T, 1>(reinterpret_cast<T*>(0x00))));
+    EXPECT_TRUE((kernelpp::is_aligned<T, 1>(reinterpret_cast<T*>(0x04))));
+    EXPECT_TRUE((kernelpp::is_aligned<T, 2>(reinterpret_cast<T*>(0x08))));
+
+    EXPECT_FALSE((kernelpp::is_aligned<T, 1>(reinterpret_cast<T*>(0x01))));
+    EXPECT_FALSE((kernelpp::is_aligned<T, 1>(reinterpret_cast<T*>(0x02))));
+    EXPECT_FALSE((kernelpp::is_aligned<T, 1>(reinterpret_cast<T*>(0x03))));
+    EXPECT_FALSE((kernelpp::is_aligned<T, 2>(reinterpret_cast<T*>(0x04))));
+}
+
+/* extras ------------------------------------------------------------------ */
 
 TEST(runners, log_runner)
 {
     log_runner<foo> r(&std::cout);
     EXPECT_FALSE(run_with<foo>(r));
 }
+
+/* nested kernels ---------------------------------------------------------- */
 
 namespace
 {
