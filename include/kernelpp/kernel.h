@@ -32,8 +32,12 @@ namespace kernelpp
         NONE = 0,
 
         /* The kernel was invoked with a compute mode that wasn't
-           enabled at compile time or is unavailable at run-time  */
+           enabled at compile time  */
         COMPUTE_MODE_DISABLED,
+
+        /* The kernel was invoked with a compute mode unavailable
+           at run-time */
+        COMPUTE_MODE_UNAVAILABLE,
 
         /* The kernel does not support being invoked with the
            specified compute mode or arguments */
@@ -119,6 +123,7 @@ namespace kernelpp
         switch (s) {
         case error_code::KERNEL_FAILED: return "Kernel Failed";
         case error_code::COMPUTE_MODE_DISABLED: return "Compute Mode Disabled";
+        case error_code::COMPUTE_MODE_UNAVAILABLE: return "Compute Mode Unavailable";
         case error_code::KERNEL_NOT_DEFINED: return "Kernel Not Defined";
         case error_code::CANCELLED: return "Cancelled";
         case error_code::NONE: return "Success";

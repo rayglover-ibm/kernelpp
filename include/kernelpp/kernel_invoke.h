@@ -107,7 +107,9 @@ namespace kernelpp
         static auto call(Runner& r, Args&&... args)
             -> result<K, Args...>
         {
+            if (!compute_traits<M>::available()) { return error_code::COMPUTE_MODE_UNAVAILABLE; }
             if (!r.begin(M)) { return error_code::CANCELLED; }
+
             result<K, Args...> s = r.template apply<M>(std::forward<Args>(args)...);
             r.end(op_traits<K, Args...>::get_errc(s));
 
@@ -135,26 +137,19 @@ namespace kernelpp
     {
         result<Kernel, Args...> s = error_code::KERNEL_NOT_DEFINED;
 
-        /* Attempt to run cuda kernel */
-        if (compute_traits<compute_mode::CUDA>::available())
-        {
-            s = control<compute_mode::CUDA>::call<Kernel>(
-                    r, std::forward<Args>(args)...);
-        }
-        /* Attempt to run avx kernel */
-        if (s == error_code::KERNEL_NOT_DEFINED &&
-            compute_traits<compute_mode::AVX>::available())
-        {
-            s = control<compute_mode::AVX>::call<Kernel>(
-                    r, std::forward<Args>(args)...);
-        }
-        /* Attempt/fallback to run cpu kernel */
-        if (s == error_code::KERNEL_NOT_DEFINED &&
-            compute_traits<compute_mode::CPU>::available())
-        {
-            s = control<compute_mode::CPU>::call<Kernel>(
-                    r, std::forward<Args>(args)...);
-        }
+        s = control<compute_mode::CUDA>::call<Kernel>(
+                r, std::forward<Args>(args)...);
+
+        if (s == error_code::NONE) { return s; }
+
+        s = control<compute_mode::AVX>::call<Kernel>(
+                r, std::forward<Args>(args)...);
+
+        if (s == error_code::NONE) { return s; }
+
+        s = control<compute_mode::CPU>::call<Kernel>(
+                r, std::forward<Args>(args)...);
+
         return s;
     }
 
