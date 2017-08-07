@@ -222,12 +222,12 @@ KERNEL_DECL(kern_special, compute_mode::CPU, compute_mode::AVX)
 
     static int avx_i32;
     static int avx_f32;
-    static int cpu;
+    static int generic;
 
-    /* generic cpu impl */
-    template <typename T>
-    static void foo(T val, tag<compute_mode::CPU>)     { cpu++; }
-    
+    /* generic generic impl */
+    template <typename T, compute_mode M>
+    static void foo(T val, tag<M>)                     { generic++; }
+
     /* avx float/int impl */
     static void foo(float val, tag<compute_mode::AVX>) { avx_f32++; }
     static void foo(int val, tag<compute_mode::AVX>)   { avx_i32++; }
@@ -238,7 +238,7 @@ KERNEL_DECL(kern_special, compute_mode::CPU, compute_mode::AVX)
 
 int kern_special::avx_i32 = 0;
 int kern_special::avx_f32 = 0;
-int kern_special::cpu = 0;
+int kern_special::generic = 0;
 
 TEST(specializations, call_generic)
 {
@@ -246,7 +246,7 @@ TEST(specializations, call_generic)
     run<kern_special, compute_mode::AVX>(float(1));
     run<kern_special, compute_mode::AVX>(int(1));
 
-    EXPECT_EQ(1, kern_special::cpu);
+    EXPECT_EQ(1, kern_special::generic);
     EXPECT_EQ(1, kern_special::avx_i32);
     EXPECT_EQ(1, kern_special::avx_f32);
 }
