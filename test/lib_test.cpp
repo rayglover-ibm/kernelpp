@@ -134,7 +134,8 @@ TEST(kernel, call_cuda)
 
 namespace
 {
-    KERNEL_DECL(foo_3, compute_mode::CPU, compute_mode::AVX) {
+    KERNEL_DECL(foo_3, compute_mode::CPU, compute_mode::AVX)
+    {
         template<compute_mode> static void op();
         template<compute_mode> static error_code op(std::vector<float>&);
     };
@@ -211,4 +212,41 @@ TEST(struct_example, call)
     f.call();
 
     EXPECT_EQ(1, f.calls);
+}
+
+/* specializations --------------------------------------------------------- */
+
+KERNEL_DECL(kern_special, compute_mode::CPU, compute_mode::AVX)
+{
+    template <compute_mode M> struct tag {};
+
+    static int avx_i32;
+    static int avx_f32;
+    static int cpu;
+
+    /* generic cpu impl */
+    template <typename T>
+    static void foo(T val, tag<compute_mode::CPU>)     { cpu++; }
+    
+    /* avx float/int impl */
+    static void foo(float val, tag<compute_mode::AVX>) { avx_f32++; }
+    static void foo(int val, tag<compute_mode::AVX>)   { avx_i32++; }
+
+    template <compute_mode M, typename T>
+    static void op(T val) { foo(val, tag<M>{}); }
+};
+
+int kern_special::avx_i32 = 0;
+int kern_special::avx_f32 = 0;
+int kern_special::cpu = 0;
+
+TEST(specializations, call_generic)
+{
+    run<kern_special, compute_mode::CPU>(float(1.0));
+    run<kern_special, compute_mode::AVX>(float(1));
+    run<kern_special, compute_mode::AVX>(int(1));
+
+    EXPECT_EQ(1, kern_special::cpu);
+    EXPECT_EQ(1, kern_special::avx_i32);
+    EXPECT_EQ(1, kern_special::avx_f32);
 }
