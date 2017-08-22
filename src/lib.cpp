@@ -16,29 +16,44 @@ limitations under the License.  */
 #include <mutex>
 
 #ifdef _MSC_VER
-#  include <intrin.h>
+# include <intrin.h>
 #endif
 
-#ifdef __GNUC__
-void __cpuid(int* cpuinfo, int info) {
-    __asm__ __volatile__(
-        "xchg %%ebx, %%edi;"
-        "cpuid;"
-        "xchg %%ebx, %%edi;"
-        :"=a" (cpuinfo[0]), "=D" (cpuinfo[1]), "=c" (cpuinfo[2]), "=d" (cpuinfo[3])
-        :"0" (info)
+
+#ifdef __amd64__
+# define _XCR_XFEATURE_ENABLED_MASK 0
+
+void __cpuid(uint32_t abcd[4], uint32_t eax)
+{
+    /* Reference: https://software.intel.com/en-us/articles/
+           how-to-detect-new-instruction-support-in-the-4th-generation-
+           intel-core-processor-family
+    */
+    uint32_t ecx = 0, ebx = 0, edx = 0;
+
+# if defined(_MSC_VER)
+    __cpuidex(abcd, eax, ecx);
+# else
+    __asm__ (
+        "cpuid;" : "+b"(ebx), "+a"(eax), "+c"(ecx), "=d"(edx)
     );
+# endif
+
+    abcd[0] = eax;
+    abcd[1] = ebx;
+    abcd[2] = ecx;
+    abcd[3] = edx;
 }
 
-unsigned long long _xgetbv(unsigned int index) {
-    unsigned int eax, edx;
-    __asm__ __volatile__(
-        "xgetbv;"
-        : "=a" (eax), "=d"(edx)
-        : "c" (index)
-    );
-    return ((unsigned long long)edx << 32) | eax;
+uint64_t _xgetbv(const std::uint32_t xcr)
+{
+	uint32_t lo, hi;
+	__asm__ (
+		"xgetbv" : "=a"(lo), "=d"(hi) : "c"(xcr)
+	);
+	return (static_cast<std::uint64_t>(hi) << 32) | static_cast<std::uint64_t>(lo);
 }
+
 #endif
 
 namespace kernelpp
@@ -49,19 +64,20 @@ namespace kernelpp
         static std::once_flag flag;
 
         std::call_once(flag, [&]() {
-            int cpuinfo[4];
-            __cpuid(cpuinfo, 1);
+            uint32_t cpu_info[4] = {0};
 
-            bool avxSupportted    = cpuinfo[2] & (1 << 28) || false;
-            bool osxsaveSupported = cpuinfo[2] & (1 << 27) || false;
+            __cpuid(cpu_info, 1u);
+            bool osUsesXSAVE_XRSTORE = cpu_info[2] & (1 << 27) || false;
+            bool cpuAVXSupport = cpu_info[2] & (1 << 28) || false;
 
-            if (osxsaveSupported && avxSupportted)
+            __cpuid(cpu_info, 7u);
+            bool cpuAVX2Support = cpu_info[1] & (1 << 5) || false;
+
+            if (osUsesXSAVE_XRSTORE && cpuAVXSupport && cpuAVX2Support)
             {
-                unsigned long long xcrFeatureMask = _xgetbv(0);
-                avxSupportted = (xcrFeatureMask & 0x6) == 0x6;
+                unsigned long long xcrFeatureMask = _xgetbv(_XCR_XFEATURE_ENABLED_MASK);
+                success = (xcrFeatureMask & 0x6) == 0x6;
             }
-
-            success = avxSupportted;
         });
 
         return success;
