@@ -246,7 +246,16 @@ TEST(specializations, call_generic)
     run<kern_special, compute_mode::AVX>(float(1));
     run<kern_special, compute_mode::AVX>(int(1));
 
-    EXPECT_EQ(1, kern_special::generic);
-    EXPECT_EQ(1, kern_special::avx_i32);
-    EXPECT_EQ(1, kern_special::avx_f32);
+    if (compute_traits<compute_mode::AVX>::enabled &&
+        compute_traits<compute_mode::AVX>::available())
+    {
+        EXPECT_EQ(1, kern_special::generic);
+        EXPECT_EQ(1, kern_special::avx_i32);
+        EXPECT_EQ(1, kern_special::avx_f32);
+    }
+    else {
+        EXPECT_EQ(1, kern_special::generic);
+        EXPECT_EQ(0, kern_special::avx_i32);
+        EXPECT_EQ(0, kern_special::avx_f32);
+    }
 }
