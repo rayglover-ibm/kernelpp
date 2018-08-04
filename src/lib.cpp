@@ -19,9 +19,9 @@ limitations under the License.  */
 # include <intrin.h>
 #endif
 
-
-#ifdef __amd64__
+#if !defined(_XCR_XFEATURE_ENABLED_MASK)
 # define _XCR_XFEATURE_ENABLED_MASK 0
+#endif
 
 void __cpuid(uint32_t abcd[4], uint32_t eax)
 {
@@ -53,8 +53,6 @@ uint64_t _xgetbv(const std::uint32_t xcr)
 	);
 	return (static_cast<std::uint64_t>(hi) << 32) | static_cast<std::uint64_t>(lo);
 }
-
-#endif
 
 namespace kernelpp
 {
