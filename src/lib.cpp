@@ -47,11 +47,11 @@ void __cpuid(uint32_t abcd[4], uint32_t eax)
 
 uint64_t _xgetbv(const std::uint32_t xcr)
 {
-	uint32_t lo, hi;
-	__asm__ (
-		"xgetbv" : "=a"(lo), "=d"(hi) : "c"(xcr)
-	);
-	return (static_cast<std::uint64_t>(hi) << 32) | static_cast<std::uint64_t>(lo);
+    uint32_t lo, hi;
+    __asm__ (
+        "xgetbv" : "=a"(lo), "=d"(hi) : "c"(xcr)
+    );
+    return (static_cast<std::uint64_t>(hi) << 32) | static_cast<std::uint64_t>(lo);
 }
 
 namespace kernelpp
@@ -62,6 +62,7 @@ namespace kernelpp
         static std::once_flag flag;
 
         std::call_once(flag, [&]() {
+            /* determine whether the CPU supports avx/avx2 */
             uint32_t cpu_info[4] = {0};
 
             __cpuid(cpu_info, 1u);
@@ -73,6 +74,7 @@ namespace kernelpp
 
             if (osUsesXSAVE_XRSTORE && cpuAVXSupport && cpuAVX2Support)
             {
+                /* check the OS will save the YMM registers */
                 unsigned long long xcrFeatureMask = _xgetbv(_XCR_XFEATURE_ENABLED_MASK);
                 success = (xcrFeatureMask & 0x6) == 0x6;
             }
