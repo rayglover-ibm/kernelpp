@@ -23,21 +23,20 @@ limitations under the License.  */
 # define _XCR_XFEATURE_ENABLED_MASK 0
 #endif
 
-void __cpuid(uint32_t abcd[4], uint32_t eax)
+#if defined(_MSC_VER)
+
+void cpuid(uint32_t abcd[4], uint32_t eax) { __cpuid((int*) abcd, eax); }
+uint64_t xgetbv(const std::uint32_t xcr) { return _xgetbv(xcr); }
+
+#else
+
+void cpuid(uint32_t abcd[4], uint32_t eax)
 {
-    /* Reference: https://software.intel.com/en-us/articles/
-           how-to-detect-new-instruction-support-in-the-4th-generation-
-           intel-core-processor-family
-    */
     uint32_t ecx = 0, ebx = 0, edx = 0;
 
-# if defined(_MSC_VER)
-    __cpuidex(abcd, eax, ecx);
-# else
     __asm__ (
         "cpuid;" : "+b"(ebx), "+a"(eax), "+c"(ecx), "=d"(edx)
     );
-# endif
 
     abcd[0] = eax;
     abcd[1] = ebx;
@@ -45,7 +44,7 @@ void __cpuid(uint32_t abcd[4], uint32_t eax)
     abcd[3] = edx;
 }
 
-uint64_t _xgetbv(const std::uint32_t xcr)
+uint64_t xgetbv(const std::uint32_t xcr)
 {
     uint32_t lo, hi;
     __asm__ (
@@ -53,6 +52,8 @@ uint64_t _xgetbv(const std::uint32_t xcr)
     );
     return (static_cast<std::uint64_t>(hi) << 32) | static_cast<std::uint64_t>(lo);
 }
+
+#endif
 
 namespace kernelpp
 {
@@ -62,20 +63,20 @@ namespace kernelpp
         static std::once_flag flag;
 
         std::call_once(flag, [&]() {
-            /* determine whether the CPU supports avx/avx2 */
+            /* determine whether the CPU supports avx and avx2 */
             uint32_t cpu_info[4] = {0};
 
-            __cpuid(cpu_info, 1u);
+            cpuid(cpu_info, 1u);
             bool osUsesXSAVE_XRSTORE = cpu_info[2] & (1 << 27) || false;
             bool cpuAVXSupport = cpu_info[2] & (1 << 28) || false;
 
-            __cpuid(cpu_info, 7u);
+            cpuid(cpu_info, 7u);
             bool cpuAVX2Support = cpu_info[1] & (1 << 5) || false;
 
             if (osUsesXSAVE_XRSTORE && cpuAVXSupport && cpuAVX2Support)
             {
                 /* check the OS will save the YMM registers */
-                unsigned long long xcrFeatureMask = _xgetbv(_XCR_XFEATURE_ENABLED_MASK);
+                unsigned long long xcrFeatureMask = xgetbv(_XCR_XFEATURE_ENABLED_MASK);
                 success = (xcrFeatureMask & 0x6) == 0x6;
             }
         });
